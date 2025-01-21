@@ -1,3 +1,4 @@
+#include "ds/ll.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_render.h>
 
@@ -10,9 +11,50 @@
 #define X_CELL 11
 #define Y_CELL 11
 
-void add_marker(SDL_Renderer *renderer) {
-  // -1 untuk kiri, 1 untuk kanan
+#define POINT_SIZE 10
 
+void draw_line_coor(SDL_Renderer *renderer, LinkedList *points) {
+  Point pointTemp = {CENTER_WIDTH, CENTER_HEIGHT};
+  Node *temp = points->head;
+
+  while (temp != NULL) {
+    int x1 = pointTemp.x, y1 = pointTemp.y;
+
+    int x = temp->data.x, y = temp->data.y;
+    int x2 = CENTER_WIDTH + (x * CELL_WIDTH),
+        y2 = CENTER_HEIGHT - (y * CELL_WIDTH);
+
+    SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);
+    SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+    pointTemp = (Point){x2, y2};
+    temp = temp->next;
+  }
+}
+
+void point_coordinate(SDL_Renderer *renderer, LinkedList *points) {
+  // 0,0 / center point
+  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+  SDL_Rect rect = (SDL_Rect){CENTER_WIDTH - 5, CENTER_HEIGHT - 5, 10, 10};
+  SDL_RenderFillRect(renderer, &rect);
+
+  Node *temp = points->head;
+
+  while (temp != NULL) {
+    int x = temp->data.x, y = temp->data.y;
+    SDL_Rect rect;
+    rect = (SDL_Rect){CENTER_WIDTH + (x * CELL_WIDTH) - (POINT_SIZE / 2),
+                      CENTER_HEIGHT - (y * CELL_WIDTH) - (POINT_SIZE / 2),
+                      POINT_SIZE, POINT_SIZE};
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &rect);
+
+    temp = temp->next;
+  }
+}
+
+void add_marker(SDL_Renderer *renderer) {
+
+  // -1 = left, 1 = right
   // x
   for (int dir = -1; dir <= 1; dir += 2) {
     for (size_t i = CELL_WIDTH; i < X_CELL * CELL_WIDTH; i += CELL_WIDTH) {
@@ -23,6 +65,7 @@ void add_marker(SDL_Renderer *renderer) {
     }
   }
 
+  // -1 = up, 1 = down
   // y
   for (int dir = -1; dir <= 1; dir += 2) {
     for (size_t i = CELL_WIDTH; i < Y_CELL * CELL_WIDTH; i += CELL_WIDTH) {
@@ -35,11 +78,8 @@ void add_marker(SDL_Renderer *renderer) {
 }
 
 void draw_x_y(SDL_Renderer *renderer) {
-  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-  SDL_Rect rect = (SDL_Rect){CENTER_WIDTH - 5, CENTER_HEIGHT - 5, 10, 10};
-  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-  SDL_RenderFillRect(renderer, &rect);
 
+  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
   SDL_Point x_left[2] = {
       (SDL_Point){CENTER_WIDTH, CENTER_HEIGHT},
       (SDL_Point){CENTER_WIDTH - CELL_WIDTH * X_CELL, CENTER_HEIGHT}};
@@ -88,17 +128,27 @@ int main() {
   SDL_SetRenderDrawColor(renderer, 255, 255, 255, 1);
   SDL_RenderClear(renderer);
 
-  SDL_Event event;
   int running = 1;
 
   while (running) {
+    SDL_Event event;
+
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT)
         running = 0;
     }
+
     draw_grid(renderer);
     draw_x_y(renderer);
     add_marker(renderer);
+
+    LinkedList points = {.head = NULL};
+    addLast(&points, (Point){1, 2});
+    addLast(&points, (Point){2, 3});
+    addLast(&points, (Point){3, 4});
+
+    draw_line_coor(renderer, &points);
+    point_coordinate(renderer, &points);
 
     SDL_Delay(16);
     SDL_RenderPresent(renderer);
